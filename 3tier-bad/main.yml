@@ -38,7 +38,7 @@
   hosts: appdbs
   become: true
   roles: 
-    - data-tier
+    - data_tier
 
 
 
