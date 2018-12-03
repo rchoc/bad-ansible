@@ -14,12 +14,11 @@
 #   No use of handlers
 
 
-- name: Deploy repo configuration to all redhat
+- name: Deploy repo configuration to all
   hosts: all
   become: true
   roles:
     - common
-  when: ansible_facts['os_family']|lower == 'redhat'
 
 
 - name: Deploy frontends
