@@ -2,7 +2,6 @@
 # tasks file for common
 
 - name: Deploy repo configuration
-  become: true
   template:
     src: ./open_three-tier-app.repo
     dest: /etc/yum.repos.d/open_three-tier-app.repo
