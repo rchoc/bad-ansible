@@ -1,0 +1,30 @@
+---
+# tasks file for frontend
+
+- name: deploy haproxy
+  gather_facts: true
+  become: true
+
+  tasks:
+  - name: Install http
+    package:
+      name: httpd
+      state: latest
+
+  - name: install HAProxy
+    package:
+      name: haproxy
+      state: latest
+
+  - name: enable HAProxy
+    service:
+      name: haproxy
+      state: started
+      enabled: yes
+
+  - name: configure haproxy
+    template:
+      src: haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+      notify: "restart haproxy services"
+  

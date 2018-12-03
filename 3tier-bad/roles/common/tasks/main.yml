@@ -1,0 +1,13 @@
+---
+# tasks file for common
+
+- name: Deploy repo configuration
+  gather_facts: true
+  become: true
+
+  tasks:
+  - name: enable repos
+    template:
+      src: ./open_three-tier-app.repo
+      dest: /etc/yum.repos.d/open_three-tier-app.repo
+      mode: 0644
