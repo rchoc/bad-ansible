@@ -16,6 +16,7 @@
 
 - name: Deploy repo configuration to all
   hosts: all
+  gather_facts: true
   become: true
   roles:
     - common
