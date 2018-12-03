@@ -13,9 +13,9 @@
 #   Bare variables
 #   No use of handlers
 
-- name: configuration
+- name: Deploy configuration
   hosts: all
-  gather_facts: false # remove later! speeds up testing
+  gather_facts: true
   become: true
 
   tasks:
@@ -27,14 +27,15 @@
 
 - name: deploy haproxy
   hosts: frontends
-  gather_facts: false # remove later! speeds up testing
+  gather_facts: true
   become: true
 
   tasks:
-  - name: http
+  - name: Install http
     package:
-      name: httpie
+      name: httpd
       state: latest
+
   - name: install HAProxy
     yum:
       name=haproxy state=latest
@@ -46,10 +47,22 @@
     template:
       src: ./haproxy.cfg.j2
       dest: /etc/haproxy/haproxy.cfg
+      notify: "restart haproxy services"
+  
   - name: restart HAproxy
     service:
       name: haproxy
       state: restarted
+
+
+  handlers:
+  - name: restart haproxy
+    service: 
+      name:   haproxy
+      state:  restarted
+    listen: "restart haproxy services"
+
+
 
 
 - name: deploy tomcat
@@ -85,21 +98,26 @@
 
 - name: index.html on app 1
   hosts: app1
-  gather_facts: false
+  gather_facts: true
   become: true
 
+
   tasks:
+  - name: create conf directory
+    file: path=/usr/share/tomcat/webapps/ansible state=directory
   - name: copy static index.html to tomcat webapps/ansible/index.html
     template:
       src: index.html.app1
       dest: /usr/share/tomcat/webapps/ansible/index.html
 
-- name: index.html on app 1
+- name: index.html on app 2
   hosts: app2
-  gather_facts: false
+  gather_facts: true
   become: true
 
   tasks:
+  - name: create conf directory
+    file: path=/usr/share/tomcat/webapps/ansible state=directory
   - name: copy static index.html to tomcat webapps/ansible/index.html
     template:
       src: index.html.app2
@@ -111,26 +129,36 @@
   become: true
   hosts: appdbs
   tasks:
-  - name: install progress
-    command: "yum install -y postgresql-server"
+  - name: install progresql server
+    package:
+      name: postgresql-server
+      state: latest
 
   #- name: install postgres
   #  yum:
   #    name: postgresql-server
   #    state: latest
-  - name: enable apache at boot
+  - name: enable postgresql service at boot
     service:
       name: postgresql
       enabled: yes
-  - name: tell user to finish setting up postgres
-    debug:
-      msg: "Either uncomment the postgres setup or manually login and initialize"
 
- # only run the next 2 tasks once!
-#  - name: initilize postgres
-#    command: postgresql-setup initdb
-#  - name: initilize postgres some more
-#    command: chkconfig postgresql on
+  - name: Check if PostgreSQL database is initialized.
+    stat:
+      path: "/var/lib/pgsql/data/PG_VERSION"
+    register: pgdata_dir_version
+
+  - name: Ensure PostgreSQL database is initialized.
+    command: "/usr/bin/initdb -D /var/lib/pgsql/data"
+    when: not pgdata_dir_version.stat.exists
+    become: yes
+    become_user: "postgres"
+    # See: https://github.com/ansible/ansible/issues/16048#issuecomment-229012509
+    vars:
+      ansible_ssh_pipelining: true
+
+
+
   - name: start postgres
     service:
       name: postgresql.service
